@@ -1,2 +1,0 @@
-# stay-accountable
- Slack bot
