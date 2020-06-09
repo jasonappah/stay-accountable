@@ -420,6 +420,6 @@ try:
     print(f"{getTime()}Started scheduler... ")
     restore()
     schedule.every(10).minutes.do(backup)
-    slackInterface(3000)
+    slackInterface(8000)
 except Exception as e:
     print(f"{getTime()}Exception: {e}")
