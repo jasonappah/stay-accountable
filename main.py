@@ -24,6 +24,11 @@ class StrAtt(str):
 class IntAtt(int):
     pass
 
+lastBackup = ""
+
+def getTime():
+    return (datetime.now().strftime("%m/%d/%Y, %H:%M:%S") + ": ")
+
 def backup():
     print(f"{getTime()}Beginning backup to S1...")
     print(f"{getTime()}Deleting keys currently in S1...")
@@ -33,9 +38,13 @@ def backup():
     print(f"{getTime()}Sending contents of ChallengeManager to S1...")
     for i in ChallengeManager:
         api.set(i.id, i.toJSON())
-    print(f"{getTime()}Backup complete!")
+    lastBackup = getTime()
+    print(f"{lastBackup)}Backup complete!")
 
 def restore():
+    print(f"{getTime()}Ensuring that ChallengeManager is empty...")
+    for i in ChallengeManager:
+        ChallengeManager.pop(0)
     print(f"{getTime()}Beginning restore from S1...")
     for i in api.get_keys():
         jsonpickle.decode(api.get_raw(i))
@@ -50,9 +59,6 @@ def listchallenges(list=ChallengeManager, user=["nonefornow"]):
         if idx.user == user:
             tmp.append({idx.id, idx.question})
     return tmp
-
-def getTime():
-    return (datetime.now().strftime("%m/%d/%Y, %H:%M:%S") + ": ")
 
 def sendSlackMsg(channel="#bot-spam", txt="", emoji="rocket", botname="Challenger", thread_ts="none"):
     if not txt == "":
@@ -214,7 +220,7 @@ def main(port):
         main_handler(event, event_data["type"])
     
     def help(msgdest):
-        help = f"Mention *<@{SLACK_BOT_ID}>* with the options *create*, *active*, *edit [challengeid:int] [`param` :str] [newparamval:str|int]*, *delete [challengeid]*, *admin [add/delete] [user:str]* or *<@{SLACK_BOT_ID}> admin [view]*."
+        help = f"Mention *<@{SLACK_BOT_ID}>* with the options *create*, *active*, *edit [challengeid:int] [`param` :str] [newparamval:str|int]*, *delete [challengeid]*, *admin [add/delete] [user:str]* or *<@{SLACK_BOT_ID}> admin [view/runbackup/lastbackup]*."
         sendSlackMsg(channel=msgdest,txt=help)
 
     def create(event, eventtype, split):
@@ -283,7 +289,7 @@ def main(port):
 
     def admin(event, eventtype, split):
         ts = ""
-        errmsg=f"That's not the correct usage of admin. Usage: *<@{SLACK_BOT_ID}> admin [add/delete] [user:str]* or  *<@{SLACK_BOT_ID}> admin [view]*. You must be authorized as an admin. DM <@UN6C43287> if this seems wrong."
+        errmsg=f"That's not the correct usage of admin. Usage: *<@{SLACK_BOT_ID}> admin [add/delete] [user:str]* or  *<@{SLACK_BOT_ID}> admin [view/runbackup/lastbackup]*. You must be authorized as an admin. DM <@UN6C43287> if this seems wrong."
         msgdest=event["channel"]
         if eventtype == "app_mention":
             ts = event["ts"]
@@ -304,8 +310,14 @@ def main(port):
                             sendSlackMsg(channel=msgdest, txt=f"Removed admin permissions of user {split[3]}.", thread_ts=ts)
                         except:
                             sendSlackMsg(channel=msgdest, txt=f"User {split[3]} is not an admin. DM <@UN6C43287> if this seems wrong.", thread_ts=ts)
-                elif len(split) == 3 and split[2] == "view":
-                    sendSlackMsg(channel=msgdest, txt=f"Admins: *{admins}*", thread_ts=ts)
+                elif len(split) == 3:
+                    if split[2] == "view":
+                        sendSlackMsg(channel=msgdest, txt=f"Admins: *{admins}*", thread_ts=ts)
+                    elif split[2] == "lastbackup":
+                        sendSlackMsg(channel=msgdest, txt=f"Last Backup: *{lastBackup}*", thread_ts=ts)
+                    elif split[2] == "runbackup":
+                        backup()
+                        sendSlackMsg(channel=msgdest, txt=f"Ran backup to S1! Last Backup: *{lastBackup}*", thread_ts=ts)
                 else: 
                     sendSlackMsg(channel=msgdest, txt=f"{errmsg} You are authorized to modify admins.", thread_ts=ts)
             except:
@@ -328,20 +340,22 @@ def main(port):
                     if ChallengeManager[id].user in user or user in admins:
                         if not ((split[3] == "isActive") or (split[3] == "id") or (split[3] == "scheduleditem") or not(split[3] in ChallengeManager[id].__dict__.keys())):
                             tmp=split[:]
-                            finalval="\""
-                            finalval2=""
+                            tmp2=0
+                            finalval=""
                             tmp.pop(0)
                             tmp.pop(0)
                             tmp.pop(0)
                             tmp.pop(0)
-                            for i in tmp:
-                                if i == tmp[-1]:
-                                    finalval = finalval + i + "\""
-                                    finalval2 = finalval2 + i
-                                else:
-                                    finalval = finalval + i + " "
-                                    finalval2 = finalval2 + i + " "
-                            status = ChallengeManager[id].edit(split[3],finalval2)
+                            if len(tmp)>1:
+                                for i in tmp:
+                                    tmp2+=1
+                                    if tmp2 == len((tmp)):
+                                        finalval = finalval + i
+                                    else:
+                                        finalval = finalval + i + " "
+                            else:
+                                finalval = i
+                            status = ChallengeManager[id].edit(split[3],finalval)
                             if status == True:
                                 sendSlackMsg(msgdest, f"Successfully set parameter {split[3]} of challenge ID {id} to {finalval}. DM <@UN6C43287> if this seems wrong.")
                             else:
@@ -418,7 +432,7 @@ try:
     print(f"{getTime()}Starting scheduler... ")
     run_continuously()
     print(f"{getTime()}Started scheduler... ")
-    schedule.every(10).minutes.do(backup)
+    schedule.every(5).minutes.do(backup)
     main(os.environ["PORT"])
 except Exception as e:
     print(f"{getTime()}Exception: {e}")
