@@ -31,7 +31,7 @@ jobs:
       run: echo ${{ secrets.GCP_SVC_ACC_KEY }} > key.json
 
     - name: Authenticate with G Cloud CLI
-      run: gcloud auth activate-service-account ${{ secrets.GCP_SVC_ACC }} --key-file=key.json
+      run: gcloud auth activate-service-account ${{ secrets.GCP_SVC_ACC }} --key-file=${{ secrets.GCP_SVC_ACC_KEY }}
 
     - name: Deploy to Google App Engine
       run: gcloud app deploy app.yaml --project ${{ secrets.GCP_PROJ_NAME }}
