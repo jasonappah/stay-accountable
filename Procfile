@@ -1,1 +1,1 @@
-web: python3 main.py
+web: python3 stay-accountable/main.py
