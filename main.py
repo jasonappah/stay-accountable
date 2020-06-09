@@ -29,10 +29,10 @@ def backup():
     print(f"{getTime()}Deleting keys currently in S1...")
     for i in api.get_keys():
         api.delete(i)
-    print(f"{getTime()}Deleted keys currently in S1...")
+    print(f"{getTime()}Deleted keys currently in S1.")
     print(f"{getTime()}Sending contents of ChallengeManager to S1...")
     for i in ChallengeManager:
-        api.set_raw(i.getId(), i.toJSON())
+        api.set(i.id, i.toJSON())
     print(f"{getTime()}Backup complete!")
 
 def restore():
