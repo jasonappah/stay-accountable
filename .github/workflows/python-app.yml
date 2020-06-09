@@ -32,8 +32,14 @@ jobs:
         python -m pip install --upgrade pip
         if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
       
+    #- name: Store required environment variables to .env
+      #run: echo base64 -d ${{ secrets.ENV }} > .env
+    
     - name: Store required environment variables to .env
-      run: echo ${{ secrets.ENV }} > .env
-
+      uses: timheuer/base64-to-file@v1.0.3
+      with:
+        fileName: .env
+        encodedString: ${{ secrets.ENV }}
+    
     - name: Deploy to Google App Engine
       run: gcloud app deploy app.yaml --project ${{ secrets.GCP_PROJ_NAME }}
