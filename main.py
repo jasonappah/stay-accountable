@@ -8,14 +8,13 @@ from slack.errors import SlackApiError
 from slackeventsapi import SlackEventAdapter
 import threading
 from s1db import S1
-
-api = S1(os.environ["S1_TOKEN"])
 from dotenv import load_dotenv
 load_dotenv(verbose=True)
 SLACK_BOT_ID = os.environ["SLACK_BOT_ID"]
 SLACK_SIGNING_SECRET = os.environ["SLACK_SIGNING_SECRET"]
 slack_events_adapter = SlackEventAdapter(SLACK_SIGNING_SECRET, endpoint="/slack/events")
 client = WebClient(token=os.environ['SLACK_BOT_TOKEN'])
+api = S1(os.environ["S1_TOKEN"])
 
 # This program assumes it is being run on a server in UTC time zone.
 
@@ -198,7 +197,8 @@ def run_continuously(schedule=schedule, interval=1):
         continuous_thread.start()
         return cease_continuous_run
 
-def slackInterface(port):
+def main(port):
+    restore()
     print(f"{getTime()}Starting Slack interface... ")
 
     @slack_events_adapter.on("app_mention")
@@ -418,8 +418,7 @@ try:
     print(f"{getTime()}Starting scheduler... ")
     run_continuously()
     print(f"{getTime()}Started scheduler... ")
-    restore()
     schedule.every(10).minutes.do(backup)
-    slackInterface(os.environ["PORT"])
+    main(os.environ["PORT"])
 except Exception as e:
     print(f"{getTime()}Exception: {e}")
