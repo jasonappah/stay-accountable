@@ -39,7 +39,7 @@ def backup():
     for i in ChallengeManager:
         api.set(i.id, i.toJSON())
     lastBackup = getTime()
-    print(f"{lastBackup)}Backup complete!")
+    print(f"{lastBackup}Backup complete!")
 
 def restore():
     print(f"{getTime()}Ensuring that ChallengeManager is empty...")
