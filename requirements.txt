@@ -1,0 +1,7 @@
+python-dateutil==2.8.1
+python-dotenv==0.13.0
+schedule==0.6.0
+slackclient==2.5.0
+slackeventsapi==2.1.0
+jsonpickle==1.4.1
+s1db==1.0.3
