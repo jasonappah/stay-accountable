@@ -24,11 +24,16 @@ jobs:
         python -m pip install --upgrade pip
         if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
       
-    - name: Deploy
-      run: |
-        echo ${{ secrets.ENV }} > .env
-        echo ${{ secrets.GCP_SVC_ACC_KEY }} > key.json
-        gcloud auth activate-service-account ${{ secrets.GCP_SVC_ACC }} --key-file=key.json
-        gcloud app deploy app.yaml --project ${{ secrets.GCP_PROJ_NAME }}
+    - name: Store required environment variables to .env
+      run: echo ${{ secrets.ENV }} > .env
+      
+    - name: Store GCP service account key to key.json
+      run: echo ${{ secrets.GCP_SVC_ACC_KEY }} > key.json
+
+    - name: Authenticate with G Cloud CLI
+      run: gcloud auth activate-service-account ${{ secrets.GCP_SVC_ACC }} --key-file=key.json
+
+    - name: Deploy to Google App Engine
+      run: gcloud app deploy app.yaml --project ${{ secrets.GCP_PROJ_NAME }}
 
     
