@@ -18,22 +18,21 @@ jobs:
       uses: actions/setup-python@v2
       with:
         python-version: 3.8
-
+    
     - name: Install dependencies
-      run: |
-        python -m pip install --upgrade pip
-        if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
+      run: pip install -r requirements.txt
       
     - name: Store required environment variables to .env
       run: echo ${{ secrets.ENV }} > .env
-      
-    - name: Store GCP service account key to key.json
-      run: echo ${{ secrets.GCP_SVC_ACC_KEY }} > key.json
 
-    - name: Authenticate with G Cloud CLI
-      run: gcloud auth activate-service-account --key-file=key.json
-
-    - name: Deploy to Google App Engine
-      run: gcloud app deploy app.yaml --project ${{ secrets.GCP_PROJ_NAME }}
+    - name: Publish app to Google App Engine
+      uses: zxyle/publish-gae-action@v2.3
+      with:
+        # The service account email which will be used for authentication.
+        service_account_email: ${{ secrets.GCP_SVC_ACC }}
+        # The service account key which will be used for authentication.
+        service_account_key: ${{ secrets.GCP_SVC_ACC_KEY }}
+        # GAE project id
+        project_id: ${{ secrets.GCP_PROJ_NAME }}
 
     
