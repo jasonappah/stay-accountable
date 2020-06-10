@@ -41,6 +41,7 @@ def backup():
     api.set("admins", jsonpickle.encode(admins))
     lastBackup = getTime()
     print(f"{lastBackup}Backup complete!")
+    return lastBackup
 
 def restore():
     print(f"{getTime()}Ensuring that ChallengeManager is empty...")
@@ -323,8 +324,8 @@ def main(port):
                     elif split[2] == "lastbackup":
                         sendSlackMsg(channel=msgdest, txt=f"Last Backup: *{lastBackup}*", thread_ts=ts)
                     elif split[2] == "runbackup":
-                        backup()
-                        sendSlackMsg(channel=msgdest, txt=f"Ran backup to S1! Last Backup: *{lastBackup}*", thread_ts=ts)
+                        tmp = backup()
+                        sendSlackMsg(channel=msgdest, txt=f"Ran backup to S1! Last Backup: *{backup()}*", thread_ts=ts)
                 else: 
                     sendSlackMsg(channel=msgdest, txt=f"{errmsg} You are authorized to modify admins.", thread_ts=ts)
             except:
