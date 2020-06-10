@@ -1,40 +1,40 @@
 # For more information see: https://help.github.com/actions/language-and-framework-guides/using-python-with-github-actions
 
-name: Python application
+# name: Python application
 
-on:
-  push:
-    branches: [ master ]
+# on:
+#   push:
+#     branches: [ master ]
 
-jobs:
-  deploy:
-    runs-on: ubuntu-latest
+# jobs:
+#   deploy:
+#     runs-on: ubuntu-latest
 
-    steps:
-    - uses: actions/checkout@v2
-      name: Clone repo
+#     steps:
+#     - uses: actions/checkout@v2
+#       name: Clone repo
       
-    - name: Set up Python 3.8
-      uses: actions/setup-python@v2
-      with:
-        python-version: 3.8
+#     - name: Set up Python 3.8
+#       uses: actions/setup-python@v2
+#       with:
+#         python-version: 3.8
 
-    - name: Setup Google Cloud SDK
-      uses: mathrix-education/setup-gcloud@1.1.2
-      with:
-        # The service account key to use, base64-encoded.
-        service-account-key: ${{ secrets.GCP_SVC_ACC_KEY }}
-        project: ${{ secrets.GCP_PROJ_NAME }}
+#     - name: Setup Google Cloud SDK
+#       uses: mathrix-education/setup-gcloud@1.1.2
+#       with:
+#         # The service account key to use, base64-encoded.
+#         service-account-key: ${{ secrets.GCP_SVC_ACC_KEY }}
+#         project: ${{ secrets.GCP_PROJ_NAME }}
         
-    - name: Install dependencies
-      run: |
-        python -m pip install --upgrade pip
-        if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
+#     - name: Install dependencies
+#       run: |
+#         python -m pip install --upgrade pip
+#         if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
       
-    - name: Store required environment variables to .env
-      run: echo $MYVARS > .env
-      env:
-        MYVARS: base64 -d ${{ secrets.ENV }}
+#     - name: Store required environment variables to .env
+#       run: echo $MYVARS > .env
+#       env:
+#         MYVARS: base64 -d ${{ secrets.ENV }}
     
-    - name: Deploy to Google App Engine
-      run: gcloud app deploy app.yaml --project ${{ secrets.GCP_PROJ_NAME }}
+#     - name: Deploy to Google App Engine
+#       run: gcloud app deploy app.yaml --project ${{ secrets.GCP_PROJ_NAME }}
