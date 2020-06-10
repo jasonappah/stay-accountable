@@ -37,7 +37,7 @@ def backup():
     print(f"{getTime()}Deleted keys currently in S1.")
     print(f"{getTime()}Sending contents of ChallengeManager to S1...")
     for i in ChallengeManager:
-        api.set(i.id, i.toJSON())
+        api.set(str(i.id), i.toJSON())
     lastBackup = getTime()
     print(f"{lastBackup}Backup complete!")
 
