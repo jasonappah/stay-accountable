@@ -24,7 +24,6 @@ jobs:
       with:
         # The service account key to use, base64-encoded.
         service-account-key: ${{ secrets.GCP_SVC_ACC_KEY }}
-        # The default Google Cloud project. You can change it later.
         project: ${{ secrets.GCP_PROJ_NAME }}
         
     - name: Install dependencies
@@ -33,7 +32,9 @@ jobs:
         if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
       
     - name: Store required environment variables to .env
-      run: echo base64 -d ${{ secrets.ENV }} > .env
+      run: echo $MYVARS > .env
+      env:
+        MYVARS: base64 -d ${{ secrets.ENV }}
     
     - name: Deploy to Google App Engine
       run: gcloud app deploy app.yaml --project ${{ secrets.GCP_PROJ_NAME }}
