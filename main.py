@@ -188,16 +188,16 @@ class Challenge:
 
 # borrowed from https://github.com/mrhwick/schedule/blob/master/schedule/__init__.py
 def run_continuously(schedule=schedule, interval=1):
-        """Continuously run, while executing pending jobs at each elapsed
-        time interval.
-        @return cease_continuous_run: threading.Event which can be set to
-        cease continuous run.
-        Please note that it is *intended behavior that run_continuously()
-        does not run missed jobs*. For example, if you've registered a job
-        that should run every minute and you set a continuous run interval
-        of one hour then your job won't be run 60 times at each interval but
-        only once.
-        """
+        # Continuously run, while executing pending jobs at each elapsed
+        # time interval.
+        # @return cease_continuous_run: threading.Event which can be set to
+        # cease continuous run.
+        # Please note that it is *intended behavior that run_continuously()
+        # does not run missed jobs*. For example, if you've registered a job
+        # that should run every minute and you set a continuous run interval
+        # of one hour then your job won't be run 60 times at each interval but
+        # only once.
+        
         cease_continuous_run = threading.Event()
 
         class ScheduleThread(threading.Thread):
@@ -214,6 +214,8 @@ def run_continuously(schedule=schedule, interval=1):
 def main(port):
     restore()
     print(f"{getTime()}Starting Slack interface... ")
+    # Start the server on port 3000
+    slack_events_adapter.start(port=port)
 
     @slack_events_adapter.on("app_mention")
     def app_mention(event_data):
@@ -433,8 +435,7 @@ def main(port):
                 else: 
                     help(event["channel"])
 
-    # Start the server on port 3000
-    slack_events_adapter.start(port=port)
+    
 
 try:
     print(f"{getTime()}Starting scheduler... ")
