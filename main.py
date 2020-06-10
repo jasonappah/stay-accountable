@@ -48,7 +48,7 @@ def restore():
         ChallengeManager.pop(0)
     print(f"{getTime()}Beginning restore from S1...")
     for i in api.get_keys():
-        if i != "admins"
+        if i != "admins":
             jsonpickle.decode(api.get_raw(i))
         else:
             admins = jsonpickle.decode(api.get_raw(i))
