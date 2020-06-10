@@ -157,10 +157,13 @@ class Challenge:
         object = getattr(self, param)
         newdesc = getattr(object, "desc", "skip")
         print(newdesc)
-        if type(object) == IntAtt:
-            self.__setattr__(param, IntAtt(val))
+        if param != "channel":
+            if type(object) == IntAtt:
+                self.__setattr__(param, IntAtt(val))
+            else:
+                self.__setattr__(param, StrAtt(val))
         else:
-            self.__setattr__(param, StrAtt(val))
+            self.__setattr__(param, "#"+StrAtt(val))
         
         self.__dict__[param].desc = newdesc
 
@@ -353,7 +356,7 @@ def main(port):
                             if len(tmp)>1:
                                 for i in tmp:
                                     tmp2+=1
-                                    if tmp2 == len((tmp)):
+                                    if tmp2 == len(tmp):
                                         finalval = finalval + i
                                     else:
                                         finalval = finalval + i + " "
