@@ -24,7 +24,7 @@ class StrAtt(str):
 class IntAtt(int):
     pass
 
-lastBackup = ""
+lastBackup = "No backup has been taken yet."
 
 def getTime():
     return (datetime.now().strftime("%m/%d/%Y, %H:%M:%S") + ": ")
@@ -38,6 +38,7 @@ def backup():
     print(f"{getTime()}Sending contents of ChallengeManager to S1...")
     for i in ChallengeManager:
         api.set(str(i.id), i.toJSON())
+    api.set("admins", jsonpickle.encode(admins))
     lastBackup = getTime()
     print(f"{lastBackup}Backup complete!")
 
@@ -47,7 +48,10 @@ def restore():
         ChallengeManager.pop(0)
     print(f"{getTime()}Beginning restore from S1...")
     for i in api.get_keys():
-        jsonpickle.decode(api.get_raw(i))
+        if i != "admins"
+            jsonpickle.decode(api.get_raw(i))
+        else:
+            admins = jsonpickle.decode(api.get_raw(i))
     print(f"{getTime()}Restored from S1!")
 
 actions = ["help", "create", "delete", "active", "edit", "admin"]
