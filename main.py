@@ -9,6 +9,13 @@ from slackeventsapi import SlackEventAdapter
 import threading
 from s1db import S1
 from dotenv import load_dotenv
+
+try:
+    import googleclouddebugger
+    googleclouddebugger.enable()
+except ImportError:
+    pass
+
 load_dotenv(verbose=True)
 SLACK_BOT_ID = os.environ["SLACK_BOT_ID"]
 SLACK_SIGNING_SECRET = os.environ["SLACK_SIGNING_SECRET"]
