@@ -10,11 +10,11 @@ import threading
 from s1db import S1
 from dotenv import load_dotenv
 
-try:
-    import googleclouddebugger
-    googleclouddebugger.enable()
-except ImportError:
-    pass
+# try:
+#     import googleclouddebugger
+#     googleclouddebugger.enable()
+# except ImportError:
+#     pass
 
 load_dotenv(verbose=True)
 SLACK_BOT_ID = os.environ["SLACK_BOT_ID"]
@@ -25,16 +25,36 @@ api = S1(os.environ["S1_TOKEN"])
 
 # This program assumes it is being run on a server in UTC time zone.
 
+jsonpickle.set_preferred_backend('demjson')
+
 class StrAtt(str):
     pass
 
 class IntAtt(int):
     pass
 
+actions = ["help", "create", "delete", "active", "edit", "admin"]
+ChallengeManager = []
+
 lastBackup = "No backup has been taken yet."
 
 def getTime():
     return (datetime.now().strftime("%m/%d/%Y, %H:%M:%S") + ": ")
+
+# def backup():
+#     print(f"{getTime()}Beginning backup to S1...")
+#     print(f"{getTime()}Deleting keys currently in S1...")
+#     for i in api.get_keys():
+#         api.delete(i)
+#     print(f"{getTime()}Deleted keys currently in S1.")
+#     print(f"{getTime()}Sending contents of ChallengeManager to S1...")
+#     # for i in ChallengeManager:
+#     #     api.set_raw(str(i.id), i.toJSON())
+#     api.set_raw("testing", jsonpickle.encode(ChallengeManager))
+#     api.set_raw("admins", jsonpickle.encode(admins))
+#     lastBackup = getTime()
+#     print(f"{lastBackup}Backup complete!")
+#     return lastBackup
 
 def backup():
     print(f"{getTime()}Beginning backup to S1...")
@@ -43,28 +63,70 @@ def backup():
         api.delete(i)
     print(f"{getTime()}Deleted keys currently in S1.")
     print(f"{getTime()}Sending contents of ChallengeManager to S1...")
-    for i in ChallengeManager:
-        api.set(str(i.id), i.toJSON())
-    api.set("admins", jsonpickle.encode(admins))
+    tmp2 = jsonpickle.encode(ChallengeManager)
+    print(type(tmp2))
+    api.set_raw("challenges", tmp2)
+    print(f"{getTime()}Sent!")
+    print(f"{getTime()}Sending contents of admins to S1...")
+    api.set_raw("admins", jsonpickle.encode(globals["admins"]))
+    print(f"{getTime()}Sent!")
     lastBackup = getTime()
     print(f"{lastBackup}Backup complete!")
     return lastBackup
 
 def restore():
-    print(f"{getTime()}Ensuring that ChallengeManager is empty...")
-    for i in ChallengeManager:
-        ChallengeManager.pop(0)
     print(f"{getTime()}Beginning restore from S1...")
-    for i in api.get_keys():
-        if i != "admins":
-            jsonpickle.decode(api.get_raw(i))
-        else:
-            admins = jsonpickle.decode(api.get_raw(i))
-    print(f"{getTime()}Restored from S1!")
+    # try:
+    #     data = api.get_raw("challenges")
+    #     print(data)
+    #     ChallengeManager = jsonpickle.decode(data, classes=True)
+    #     print(str(type(ChallengeManager)))
+    #     print(ChallengeManager)
+    # except Exception as e:
+    #     print(f"{getTime()}There was no key in S1 for challenges: {e}")
 
-actions = ["help", "create", "delete", "active", "edit", "admin"]
-ChallengeManager = []
-admins = ["UN6C43287"]
+    # x = open('challenges.raw.json', 'r')
+    # ChallengeManager = jsonpickle.decode(x.read())
+    # x.close()
+
+    # print(ChallengeManager)
+    challengetmp=[]
+    adminstmp=[]
+    try:
+        adminstmp = api.get("admins")
+        print(f"{adminstmp}: {str(type(adminstmp))}")
+    except Exception as e:
+        print(f"{getTime()}There was no key in S1 for admins: {e}")
+
+    return [adminstmp, challengetmp]
+    
+
+# def restore():
+#     print(f"{getTime()}Ensuring that ChallengeManager is empty...")
+#     # for i in ChallengeManager:
+#     #     ChallengeManager.pop(0)
+#     print(f"{getTime()}Beginning restore from S1...")
+#     #ChallengeManager = api.get_raw("testing")
+#     # for i in api.get_keys():
+#     #     tmp = api.get_raw(i)
+#     #     print(tmp)
+#     #     if not "admin" in i:
+#     #         tmp2=jsonpickle.decode(tmp, keys=True)
+#     #         print(type(tmp2))
+#     #         print(type(tmp2))
+#     #         print(type(tmp2))
+#     #         print(type(tmp2))
+#     #         print(type(tmp2))
+#     #         print(type(tmp2))
+#     #         print(type(tmp2))
+#     #         print(type(tmp2))
+#     #         print(type(tmp2))
+#     #     else:
+#     #         admins = jsonpickle.decode(tmp)
+
+#     print(f"{getTime()}Restored from S1!")
+
+
 def listchallenges(list=ChallengeManager, user=["nonefornow"]):
     tmp = []
     for idx in list:
@@ -166,12 +228,22 @@ class Challenge:
         newdesc = getattr(object, "desc", "skip")
         print(newdesc)
         if param != "channel":
-            if type(object) == IntAtt:
-                self.__setattr__(param, IntAtt(val))
+            print(type(object))
+            print(type(object))
+            print(type(object))
+            print(type(object))
+            print(type(object))
+            print(type(object))
+            print(type(object))
+            print(type(object))
+            print(type(object))
+            if "IntAtt" in str(type(object)):
+                self.__setattr__(param, IntAtt(int(val)))
             else:
                 self.__setattr__(param, StrAtt(val))
         else:
-            self.__setattr__(param, "#"+StrAtt(val))
+            val="#"+val
+            self.__setattr__(param, StrAtt(val))
         
         self.__dict__[param].desc = newdesc
 
@@ -218,11 +290,11 @@ def run_continuously(schedule=schedule, interval=1):
         continuous_thread.start()
         return cease_continuous_run
 
-def main(port):
-    restore()
+def slackInterface():
+    content = restore()
+    setattr(globals, "admins", content[0])
+    jsonpickle.decode(content[1])
     print(f"{getTime()}Starting Slack interface... ")
-    # Start the server on port 3000
-    slack_events_adapter.start(port=port)
 
     @slack_events_adapter.on("app_mention")
     def app_mention(event_data):
@@ -243,8 +315,10 @@ def main(port):
     def create(event, eventtype, split):
         ts = ""
         msgdest=event["channel"]
-        if eventtype == "app_mention":
+        try:
             ts = event["ts"]
+        except:
+            pass
         user=event["user"]
         errmsg=f"That's not the correct usage of create. Usage: *<@{SLACK_BOT_ID}> create*. DM <@UN6C43287> if this seems wrong."
         try:
@@ -278,8 +352,10 @@ def main(port):
 
         msgdest=event["channel"]
         ts = ""
-        if eventtype == "app_mention":
+        try:
             ts = event["ts"]
+        except:
+            pass
         user=event["user"]
         errmsg=f"That's not the correct usage of active. Usage: *<@{SLACK_BOT_ID}> active*. DM <@UN6C43287> if this seems wrong."
         if id == -10:
@@ -305,11 +381,13 @@ def main(port):
             sendSlackMsg(channel=msgdest, txt=prettyprint(id), thread_ts=ts)
 
     def admin(event, eventtype, split):
-        ts = ""
         errmsg=f"That's not the correct usage of admin. Usage: *<@{SLACK_BOT_ID}> admin [add/delete] [user:str]* or  *<@{SLACK_BOT_ID}> admin [view/runbackup/lastbackup]*. You must be authorized as an admin. DM <@UN6C43287> if this seems wrong."
         msgdest=event["channel"]
-        if eventtype == "app_mention":
+        ts=""
+        try:
             ts = event["ts"]
+        except:
+            pass
         user=event["user"]
         if user in admins:
             try:
@@ -334,7 +412,7 @@ def main(port):
                         sendSlackMsg(channel=msgdest, txt=f"Last Backup: *{lastBackup}*", thread_ts=ts)
                     elif split[2] == "runbackup":
                         tmp = backup()
-                        sendSlackMsg(channel=msgdest, txt=f"Ran backup to S1! Last Backup: *{backup()}*", thread_ts=ts)
+                        sendSlackMsg(channel=msgdest, txt=f"Ran backup to S1! Last Backup: *{tmp}*", thread_ts=ts)
                 else: 
                     sendSlackMsg(channel=msgdest, txt=f"{errmsg} You are authorized to modify admins.", thread_ts=ts)
             except:
@@ -345,8 +423,10 @@ def main(port):
     def edit(event, eventtype, split):
         ts = ""
         msgdest=event["channel"]
-        if eventtype == "app_mention":
+        try:
             ts = event["ts"]
+        except:
+            pass
         user=event["user"]
         errmsg=f"That's not the correct usage of edit. Usage: *<@{SLACK_BOT_ID}> edit [challengeid:int] [`param`:str] [val:str|int]*. You can get a list of parameters that can be edited by running *<@{SLACK_BOT_ID}> active*. DM <@UN6C43287> if this seems wrong."
         try:
@@ -371,12 +451,12 @@ def main(port):
                                     else:
                                         finalval = finalval + i + " "
                             else:
-                                finalval = i
+                                finalval = tmp[0]
                             status = ChallengeManager[id].edit(split[3],finalval)
                             if status == True:
                                 sendSlackMsg(msgdest, f"Successfully set parameter {split[3]} of challenge ID {id} to {finalval}. DM <@UN6C43287> if this seems wrong.")
                             else:
-                                sendSlackMsg(msgdest, f"Unsuccessfully attempted to set parameter {split[3]} of challenge ID {id} to \"{finalval}\". DM <@UN6C43287> if this seems wrong.")
+                                sendSlackMsg(msgdest, f"Unsuccessfully attempted to set parameter {split[3]} of challenge ID {id} to {finalval}. DM <@UN6C43287> if this seems wrong.")
                         else:
                             sendSlackMsg(msgdest, f"You can't edit the {split[3]} parameter of challenge ID {id}. To stop or remove a challenge, use *<@{SLACK_BOT_ID}> delete [challengeid:int]*. DM <@UN6C43287> if this seems wrong.")
                     else:
@@ -390,8 +470,10 @@ def main(port):
     def delete(event, eventtype, split):
         ts = ""
         msgdest=event["channel"]
-        if eventtype == "app_mention":
+        try:
             ts = event["ts"]
+        except:
+            pass
         user=event["user"]
         errmsg=f"That's not the correct usage of delete. Usage: *<@{SLACK_BOT_ID}> delete [challengeid:int]*. You can get the ID of an existing challenge by using *<@{SLACK_BOT_ID}> active*, or create a new challenge by using *<@{SLACK_BOT_ID}> create*. DM <@UN6C43287> if this seems wrong."
         try:
@@ -442,13 +524,15 @@ def main(port):
                 else: 
                     help(event["channel"])
 
+    slack_events_adapter.start(port=os.environ["PORT"])
+
     
 
-try:
-    print(f"{getTime()}Starting scheduler... ")
-    run_continuously()
-    print(f"{getTime()}Started scheduler... ")
-    schedule.every(5).minutes.do(backup)
-    main(os.environ["PORT"])
-except Exception as e:
-    print(f"{getTime()}Exception: {e}")
+# try:
+print(f"{getTime()}Starting scheduler... ")
+run_continuously()
+print(f"{getTime()}Started scheduler... ")
+schedule.every(5).minutes.do(backup)
+slackInterface()
+# except Exception as e:
+#     print(f"{getTime()}Exception: {e}")
