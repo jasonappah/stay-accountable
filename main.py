@@ -7,8 +7,12 @@ from slack import WebClient
 from slack.errors import SlackApiError
 from slackeventsapi import SlackEventAdapter
 import threading
-from s1db import S1
+#from s1db import S1
+from gojson import Client
 from dotenv import load_dotenv
+
+c = Client("f813fa2225f8cac23f95dbea266c799e")
+c.url = "https://floweryjointpredictions--five-nine.repl.co/api/586932d1eabd5e09b144ec0fa9d8a346"
 
 # try:
 #     import googleclouddebugger
@@ -21,7 +25,7 @@ SLACK_BOT_ID = os.environ["SLACK_BOT_ID"]
 SLACK_SIGNING_SECRET = os.environ["SLACK_SIGNING_SECRET"]
 slack_events_adapter = SlackEventAdapter(SLACK_SIGNING_SECRET, endpoint="/slack/events")
 client = WebClient(token=os.environ['SLACK_BOT_TOKEN'])
-api = S1(os.environ["S1_TOKEN"])
+#api = S1(os.environ["S1_TOKEN"])
 
 # This program assumes it is being run on a server in UTC time zone.
 
@@ -35,6 +39,7 @@ class IntAtt(int):
 
 actions = ["help", "create", "delete", "active", "edit", "admin"]
 ChallengeManager = []
+admins = ["user"]
 
 lastBackup = "No backup has been taken yet."
 
@@ -56,49 +61,40 @@ def getTime():
 #     print(f"{lastBackup}Backup complete!")
 #     return lastBackup
 
+# def backup():
+#     print(f"{getTime()}Beginning backup to S1...")
+#     print(f"{getTime()}Deleting keys currently in S1...")
+#     for i in api.get_keys():
+#         api.delete(i)
+#     print(f"{getTime()}Deleted keys currently in S1.")
+#     print(f"{getTime()}Sending contents of ChallengeManager to S1...")
+#     tmp2 = jsonpickle.encode(ChallengeManager)
+#     print(type(tmp2))
+#     api.set_raw("challenges", tmp2)
+#     print(f"{getTime()}Sent!")
+#     print(f"{getTime()}Sending contents of admins to S1...")
+#     api.set_raw("admins", jsonpickle.encode(globals["admins"]))
+#     print(f"{getTime()}Sent!")
+#     lastBackup = getTime()
+#     print(f"{lastBackup}Backup complete!")
+#     return lastBackup
+
 def backup():
-    print(f"{getTime()}Beginning backup to S1...")
-    print(f"{getTime()}Deleting keys currently in S1...")
-    for i in api.get_keys():
-        api.delete(i)
-    print(f"{getTime()}Deleted keys currently in S1.")
-    print(f"{getTime()}Sending contents of ChallengeManager to S1...")
-    tmp2 = jsonpickle.encode(ChallengeManager)
-    print(type(tmp2))
-    api.set_raw("challenges", tmp2)
-    print(f"{getTime()}Sent!")
-    print(f"{getTime()}Sending contents of admins to S1...")
-    api.set_raw("admins", jsonpickle.encode(globals["admins"]))
-    print(f"{getTime()}Sent!")
-    lastBackup = getTime()
-    print(f"{lastBackup}Backup complete!")
-    return lastBackup
-
+    print("beginning backup")
+    print("deleting stuff")
+    print(c.delete(""))
+    print(c.store("admins", globals()["admins"]))
+    print(c.store("challenges", globals()["ChallengeManager"]))
+    
 def restore():
-    print(f"{getTime()}Beginning restore from S1...")
-    # try:
-    #     data = api.get_raw("challenges")
-    #     print(data)
-    #     ChallengeManager = jsonpickle.decode(data, classes=True)
-    #     print(str(type(ChallengeManager)))
-    #     print(ChallengeManager)
-    # except Exception as e:
-    #     print(f"{getTime()}There was no key in S1 for challenges: {e}")
-
-    # x = open('challenges.raw.json', 'r')
-    # ChallengeManager = jsonpickle.decode(x.read())
-    # x.close()
-
-    # print(ChallengeManager)
-    challengetmp=[]
-    adminstmp=[]
-    try:
-        adminstmp = api.get("admins")
-        print(f"{adminstmp}: {str(type(adminstmp))}")
-    except Exception as e:
-        print(f"{getTime()}There was no key in S1 for admins: {e}")
-
-    return [adminstmp, challengetmp]
+    print("beginning restore")
+    print(f"{getTime()}Ensuring that ChallengeManager is empty...")
+    for i in ChallengeManager:
+        ChallengeManager.pop(0)
+    globals()["ChallengeManager"] = jsonpickle.encode(c.retrieve("challenges"))
+    globals()["admins"] = jsonpickle.encode(c.retrieve("admins"))
+    print(globals()["ChallengeManager"])
+    print(globals()["admins"])
     
 
 # def restore():
@@ -292,8 +288,8 @@ def run_continuously(schedule=schedule, interval=1):
 
 def slackInterface():
     content = restore()
-    setattr(globals, "admins", content[0])
-    jsonpickle.decode(content[1])
+    # setattr(globals, "admins", content[0])
+    # jsonpickle.decode(content[1])
     print(f"{getTime()}Starting Slack interface... ")
 
     @slack_events_adapter.on("app_mention")
@@ -529,10 +525,12 @@ def slackInterface():
     
 
 # try:
+restore()
 print(f"{getTime()}Starting scheduler... ")
 run_continuously()
 print(f"{getTime()}Started scheduler... ")
 schedule.every(5).minutes.do(backup)
+Challenge()
 slackInterface()
 # except Exception as e:
 #     print(f"{getTime()}Exception: {e}")
