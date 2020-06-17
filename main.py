@@ -2,17 +2,15 @@ import schedule
 import time
 import os
 import jsonpickle
-from datetime import datetime
+from datetime import datetime, timezone
 from slack import WebClient
 from slack.errors import SlackApiError
 from slackeventsapi import SlackEventAdapter
 import threading
-#from s1db import S1
-from gojson import Client
 from dotenv import load_dotenv
-
-c = Client("f813fa2225f8cac23f95dbea266c799e")
-c.url = "https://floweryjointpredictions--five-nine.repl.co/api/586932d1eabd5e09b144ec0fa9d8a346"
+import boto3
+import pprint
+import shelve
 
 # try:
 #     import googleclouddebugger
@@ -25,11 +23,11 @@ SLACK_BOT_ID = os.environ["SLACK_BOT_ID"]
 SLACK_SIGNING_SECRET = os.environ["SLACK_SIGNING_SECRET"]
 slack_events_adapter = SlackEventAdapter(SLACK_SIGNING_SECRET, endpoint="/slack/events")
 client = WebClient(token=os.environ['SLACK_BOT_TOKEN'])
-#api = S1(os.environ["S1_TOKEN"])
+
+
+
 
 # This program assumes it is being run on a server in UTC time zone.
-
-jsonpickle.set_preferred_backend('demjson')
 
 class StrAtt(str):
     pass
@@ -46,82 +44,42 @@ lastBackup = "No backup has been taken yet."
 def getTime():
     return (datetime.now().strftime("%m/%d/%Y, %H:%M:%S") + ": ")
 
-# def backup():
-#     print(f"{getTime()}Beginning backup to S1...")
-#     print(f"{getTime()}Deleting keys currently in S1...")
-#     for i in api.get_keys():
-#         api.delete(i)
-#     print(f"{getTime()}Deleted keys currently in S1.")
-#     print(f"{getTime()}Sending contents of ChallengeManager to S1...")
-#     # for i in ChallengeManager:
-#     #     api.set_raw(str(i.id), i.toJSON())
-#     api.set_raw("testing", jsonpickle.encode(ChallengeManager))
-#     api.set_raw("admins", jsonpickle.encode(admins))
-#     lastBackup = getTime()
-#     print(f"{lastBackup}Backup complete!")
-#     return lastBackup
+print(f"{getTime()}Initializing S3...")
+aws = boto3.Session(
+    aws_access_key_id=os.environ["AWS_ACCESS_KEY"],
+    aws_secret_access_key=os.environ["AWS_SECRET_KEY"],
+)
+s3=aws.client('s3')
+print(f"{getTime()}Initialized S3...")
 
-# def backup():
-#     print(f"{getTime()}Beginning backup to S1...")
-#     print(f"{getTime()}Deleting keys currently in S1...")
-#     for i in api.get_keys():
-#         api.delete(i)
-#     print(f"{getTime()}Deleted keys currently in S1.")
-#     print(f"{getTime()}Sending contents of ChallengeManager to S1...")
-#     tmp2 = jsonpickle.encode(ChallengeManager)
-#     print(type(tmp2))
-#     api.set_raw("challenges", tmp2)
-#     print(f"{getTime()}Sent!")
-#     print(f"{getTime()}Sending contents of admins to S1...")
-#     api.set_raw("admins", jsonpickle.encode(globals["admins"]))
-#     print(f"{getTime()}Sent!")
-#     lastBackup = getTime()
-#     print(f"{lastBackup}Backup complete!")
-#     return lastBackup
+def restore():
+    with open('temp.png', 'wb') as data:
+        s3.download_fileobj(os.environ["AWS_BUCKET"], 'tutorial.png', data)
+    files = s3.list_objects_v2(Bucket='jaa-challenger')
+    pp = pprint.PrettyPrinter(indent=2)
+    tmp = {}
+    for i in files["Contents"]:
+        tmp[i["LastModified"]] = i["Key"]
+    pp.pprint(tmp)
+    for i in tmp.keys():
+        latestdate = datetime(1990, 1, 1, 1, 1, 7,tzinfo=timezone.utc)
+        if i > latestdate:
+            latest = i
+    latestfilename = tmp[latest]
+    print(f"The most recent file was added at {latestdate}. The file name is {latestfilename}.")
 
 def backup():
-    print("beginning backup")
-    print("deleting stuff")
-    print(c.delete(""))
-    print(c.store("admins", globals()["admins"]))
-    print(c.store("challenges", globals()["ChallengeManager"]))
-    
-def restore():
-    print("beginning restore")
-    print(f"{getTime()}Ensuring that ChallengeManager is empty...")
-    for i in ChallengeManager:
-        ChallengeManager.pop(0)
-    globals()["ChallengeManager"] = jsonpickle.encode(c.retrieve("challenges"))
-    globals()["admins"] = jsonpickle.encode(c.retrieve("admins"))
-    print(globals()["ChallengeManager"])
-    print(globals()["admins"])
-    
-
-# def restore():
-#     print(f"{getTime()}Ensuring that ChallengeManager is empty...")
-#     # for i in ChallengeManager:
-#     #     ChallengeManager.pop(0)
-#     print(f"{getTime()}Beginning restore from S1...")
-#     #ChallengeManager = api.get_raw("testing")
-#     # for i in api.get_keys():
-#     #     tmp = api.get_raw(i)
-#     #     print(tmp)
-#     #     if not "admin" in i:
-#     #         tmp2=jsonpickle.decode(tmp, keys=True)
-#     #         print(type(tmp2))
-#     #         print(type(tmp2))
-#     #         print(type(tmp2))
-#     #         print(type(tmp2))
-#     #         print(type(tmp2))
-#     #         print(type(tmp2))
-#     #         print(type(tmp2))
-#     #         print(type(tmp2))
-#     #         print(type(tmp2))
-#     #     else:
-#     #         admins = jsonpickle.decode(tmp)
-
-#     print(f"{getTime()}Restored from S1!")
-
+    filename='/' + datetime.now().strftime("%m/%d/%Y-%H:%M:%S") + '.clgr'
+    my_shelf = shelve.open(filename,'n') # 'n' for new
+    for key in dir():
+        try:
+            my_shelf[key] = globals()[key]
+        except TypeError:
+            #
+            # __builtins__, my_shelf, and imported modules can not be shelved.
+            #
+            print('ERROR shelving: {0}'.format(key))
+    my_shelf.close()
 
 def listchallenges(list=ChallengeManager, user=["nonefornow"]):
     tmp = []

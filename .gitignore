@@ -3,3 +3,4 @@
 # dotenv environment variables file
 .env
 .env.test
+s3.yaml
