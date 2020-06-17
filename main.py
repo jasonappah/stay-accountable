@@ -24,9 +24,6 @@ SLACK_SIGNING_SECRET = os.environ["SLACK_SIGNING_SECRET"]
 slack_events_adapter = SlackEventAdapter(SLACK_SIGNING_SECRET, endpoint="/slack/events")
 client = WebClient(token=os.environ['SLACK_BOT_TOKEN'])
 
-
-
-
 # This program assumes it is being run on a server in UTC time zone.
 
 class StrAtt(str):
@@ -68,11 +65,11 @@ def restore():
     latestfilename = tmp[latest]
     print(f"The most recent file was added at {latestdate}. The file name is {latestfilename}.")
     with open(latestfilename, 'wb') as data:
-        s3.download_fileobj(os.environ["AWS_BUCKET"], latestfilename, latestfilename)
-    shelf = shelf.open(latestfilename)
-    for key in shelf:
-        globals()[key]=shelf[key]
-    shelf.close()
+        s3.download_fileobj(os.environ["AWS_BUCKET"], latestfilename, data)
+    clgr = shelve.open(latestfilename)
+    for key in clgr:
+        globals()[key]=clgr[key]
+    clgr.close()
 
 def backup():
     filename='/' + datetime.now().strftime("%m/%d/%Y-%H:%M:%S") + '.clgr'
@@ -81,9 +78,7 @@ def backup():
         try:
             my_shelf[key] = globals()[key]
         except TypeError:
-            #
             # __builtins__, my_shelf, and imported modules can not be shelved.
-            #
             print('ERROR shelving: {0}'.format(key))
     my_shelf.close()
 
