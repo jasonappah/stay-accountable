@@ -67,6 +67,12 @@ def restore():
             latest = i
     latestfilename = tmp[latest]
     print(f"The most recent file was added at {latestdate}. The file name is {latestfilename}.")
+    with open(latestfilename, 'wb') as data:
+        s3.download_fileobj(os.environ["AWS_BUCKET"], latestfilename, latestfilename)
+    shelf = shelf.open(latestfilename)
+    for key in shelf:
+        globals()[key]=shelf[key]
+    shelf.close()
 
 def backup():
     filename='/' + datetime.now().strftime("%m/%d/%Y-%H:%M:%S") + '.clgr'
