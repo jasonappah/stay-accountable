@@ -1,6 +1,14 @@
 .vscode/
+
+# idk what this is but it bugged me enough to add it lol
 .DS_Store
+
 # dotenv environment variables file
 .env
 .env.test
-s3.yaml
+
+# backup files
+.clgr.db
+
+
+

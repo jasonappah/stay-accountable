@@ -66,16 +66,20 @@ def restore():
     with open(latestfilename.split("/")[-1], 'wb') as data:
         s3.download_fileobj(os.environ["AWS_BUCKET"], latestfilename, data)
     print("downloaded")
+
     ### PROBLEM BELOW ####
+    # we're able to successfully download the file, NOWWW the issue is getting shelve to use it.
     clgr = shelve.open(latestfilename.split("/")[-1], 'c')
+    # here is the error:
     # raise error[0]("db type could not be determined")
     # dbm.error: db type could not be determined
     ### PROBLEM ABOVE ####
+
     for key in clgr:
         globals()[key]=clgr[key]
     clgr.close()
     print("finished restore?")
-    
+
 def backup():
     print(f"{getTime()}Starting backup...")
     filename=datetime.now().strftime("%m-%d-%Y_%H:%M:%S") + '.clgr'
@@ -485,8 +489,7 @@ restore()
 print(f"{getTime()}Starting scheduler... ")
 run_continuously()
 print(f"{getTime()}Started scheduler... ")
-#schedule.every(2).minutes.do(backup)
-#Challenge(question="Yeet")
+#schedule.every(5).minutes.do(backup)
 #backup()
 #slackInterface()
 # except Exception as e:
