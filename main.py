@@ -50,44 +50,44 @@ s3=aws.client('s3')
 print(f"{getTime()}Initialized S3...")
 
 def restore():
-    with open('temp.png', 'wb') as data:
-        s3.download_fileobj(os.environ["AWS_BUCKET"], 'tutorial.png', data)
     files = s3.list_objects_v2(Bucket='jaa-challenger')
     pp = pprint.PrettyPrinter(indent=2)
     tmp = {}
     for i in files["Contents"]:
         tmp[i["LastModified"]] = i["Key"]
     pp.pprint(tmp)
+    latestdate = datetime(1990, 1, 1, 1, 1, 7,tzinfo=timezone.utc)
     for i in tmp.keys():
-        latestdate = datetime(1990, 1, 1, 1, 1, 7,tzinfo=timezone.utc)
-        if i > latestdate:
-            latest = i
-    latestfilename = tmp[latest]
+        if latestdate < i:
+            latestdate = i
+    latestfilename = tmp[latestdate]
     print(f"The most recent file was added at {latestdate}. The file name is {latestfilename}.")
-    with open(latestfilename, 'wb') as data:
+    print("beginning download")
+    with open(latestfilename.split("/")[-1], 'wb') as data:
         s3.download_fileobj(os.environ["AWS_BUCKET"], latestfilename, data)
-    clgr = shelve.open(latestfilename)
+    print("downloaded")
+    ### PROBLEM BELOW ####
+    clgr = shelve.open(latestfilename.split("/")[-1], 'c')
+    # raise error[0]("db type could not be determined")
+    # dbm.error: db type could not be determined
+    ### PROBLEM ABOVE ####
     for key in clgr:
         globals()[key]=clgr[key]
     clgr.close()
-
+    print("finished restore?")
+    
 def backup():
-    filename='/' + datetime.now().strftime("%m/%d/%Y-%H:%M:%S") + '.clgr'
+    print(f"{getTime()}Starting backup...")
+    filename=datetime.now().strftime("%m-%d-%Y_%H:%M:%S") + '.clgr'
     my_shelf = shelve.open(filename,'n') # 'n' for new
-    for key in dir():
-        try:
-            my_shelf[key] = globals()[key]
-        except TypeError:
-            # __builtins__, my_shelf, and imported modules can not be shelved.
-            print('ERROR shelving: {0}'.format(key))
+    print("opened shelf")
+    my_shelf["ChallengeManager"] = globals()["ChallengeManager"]
     my_shelf.close()
-
-def listchallenges(list=ChallengeManager, user=["nonefornow"]):
-    tmp = []
-    for idx in list:
-        if idx.user == user:
-            tmp.append({idx.id, idx.question})
-    return tmp
+    print("closed shelf")
+    print("uploading to s3")
+    with open(filename+".db", 'rb') as data:
+        s3.upload_fileobj(data, os.environ["AWS_BUCKET"], '/'+filename+".db",)
+    print("uploaded to s3")
 
 def sendSlackMsg(channel="#bot-spam", txt="", emoji="rocket", botname="Challenger", thread_ts="none"):
     if not txt == "":
@@ -246,9 +246,6 @@ def run_continuously(schedule=schedule, interval=1):
         return cease_continuous_run
 
 def slackInterface():
-    content = restore()
-    # setattr(globals, "admins", content[0])
-    # jsonpickle.decode(content[1])
     print(f"{getTime()}Starting Slack interface... ")
 
     @slack_events_adapter.on("app_mention")
@@ -488,8 +485,9 @@ restore()
 print(f"{getTime()}Starting scheduler... ")
 run_continuously()
 print(f"{getTime()}Started scheduler... ")
-schedule.every(5).minutes.do(backup)
-Challenge()
-slackInterface()
+#schedule.every(2).minutes.do(backup)
+#Challenge(question="Yeet")
+#backup()
+#slackInterface()
 # except Exception as e:
 #     print(f"{getTime()}Exception: {e}")
